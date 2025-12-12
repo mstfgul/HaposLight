@@ -1,9 +1,9 @@
 /* Phone frame and centered viewport */
 :root{
   /* More compact portrait size */
-  --phone-width: 360px;
-  --phone-height: 780px;
-  --phone-radius: 26px;
+  --phone-width: 320px;
+  --phone-height: 680px;
+  --phone-radius: 24px;
   --frame:#111;
 }
 *{box-sizing:border-box}
