@@ -8,7 +8,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:url('image.png') center / cover no-repeat;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;color:#fff; overscroll-behavior-y: contain; background-attachment: scroll}
+body{background:url('image.png') center / contain no-repeat;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;color:#fff; overscroll-behavior-y: contain; min-height:100vh}
 .viewport{min-height:100%;display:grid;place-items:center;padding:24px 24px 32px; overscroll-behavior: contain; position:relative; z-index:5; isolation:isolate}
 .phone{
   width: var(--phone-width);
