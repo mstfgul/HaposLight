@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HaposLight</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* App UI inside the phone - polished */
+    .screen { background: transparent; display: grid; grid-template-rows: auto 1fr auto; height:100%; position:relative; }
+    header { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:10px; padding:14px 18px; background:linear-gradient(90deg,#0ea5e9,#6366f1); color:#fff; box-shadow:0 4px 12px rgba(0,0,0,.18); }
+    header h1{ font-size:17px; margin:0; letter-spacing:.2px }
+    body::before{ content:''; position:fixed; inset:0; background-image:url('logo.png'); background-size:180px; background-repeat:repeat; opacity:0.12; z-index:0; pointer-events:none; }
+    .page-logo-large{ position:fixed; left:60px; top:50%; transform:translateY(-50%); width:500px; height:auto; z-index:1; opacity:0.7; }
+    header .toggle-btn{ background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all .2s ease }
+    header .toggle-btn:hover{ background:rgba(255,255,255,.3) }
+    .status{ margin-left:auto; font-size:10px; opacity:.9; background:#0b1220; padding:4px 6px; border-radius:6px; white-space:nowrap; }
+    .content{ display:grid; grid-template-columns: 120px 1fr; gap:0; overflow:hidden; transition:grid-template-columns .3s ease; }
+    .content.collapsed{ grid-template-columns: 0 1fr; }
+    .content.collapsed .categories{ width:0; overflow:hidden; padding:0; opacity:0; visibility:hidden }
+    .categories{ display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; padding:12px; background:#eef2f7; border-right:1px solid #d7dee8; transition:all .3s ease }
+    .cat{ padding:10px 12px; border-radius:12px; background:linear-gradient(180deg,#ffffff,#f4f7fb); border:1px solid #cbd5e1; cursor:pointer; white-space:nowrap; font-size:13px; font-weight:600; color:#0f172a; box-shadow:0 2px 8px rgba(99,102,241,.15); width:100%; text-align:left }
+    .cat:hover{ border-color:#94a3b8 }
+    .cat.active{ background:linear-gradient(180deg,#22d3ee,#0ea5e9); color:#032b36; border-color:#0ea5e9; box-shadow:0 6px 16px rgba(14,165,233,.35) }
+    .grid{ padding:10px; display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; height:100%; overflow-y:auto; overflow-x:hidden; align-content:start; -webkit-overflow-scrolling: touch; background:#f8fafc }
+    .content.collapsed .grid{ grid-template-columns: repeat(3, 1fr); gap:8px; padding:8px }
+    .content.collapsed .item{ min-height:130px; border-radius:12px }
+    .content.collapsed .item img{ height:70px }
+    .content.collapsed .item .name{ font-size:10px; padding:6px 6px 4px 6px }
+    .content.collapsed .item .price{ font-size:10px; padding:5px 6px }
+    .item{ background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:0; display:flex; flex-direction:column; gap:0; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.06); transition:all .2s ease; align-items:stretch; overflow:hidden; position:relative; min-height:150px }
+    .item:hover{ transform:translateY(-4px); box-shadow:0 12px 24px rgba(99,102,241,.2); border-color:#c7d2fe }
+    .item:active{ transform:translateY(-2px) }
+    .item img{ width:100%; height:85px; object-fit:cover; border-radius:0; background:linear-gradient(135deg,#667eea20,#764ba220); flex-shrink:0 }
+    .item .name{ font-size:11px; font-weight:600; color:#1e293b; padding:8px 8px 6px 8px; line-height:1.3; flex-grow:1 }
+    .item .price{ font-size:11px; color:#fff; background:linear-gradient(135deg,#10b981,#059669); border:none; padding:6px 8px; font-weight:700; text-align:center; letter-spacing:.2px; flex-shrink:0 }
+    .footer{ position:sticky; bottom:0; display:flex; align-items:center; gap:10px; padding:12px; background:linear-gradient(90deg,#f1f5f9,#e2e8f0); border-top:1px solid #d7dee8; box-shadow:0 -4px 12px rgba(0,0,0,.12) }
+    .cart{ flex:1; display:flex; align-items:center; gap:8px; font-size:13px; color:#0f172a }
+    .btn{ background:linear-gradient(180deg,#22c55e,#16a34a); color:#fff; border:none; border-radius:12px; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,.25) }
+    .btn:hover{ filter:brightness(1.05) }
+    .btn.secondary{ background:linear-gradient(180deg,#60a5fa,#0ea5e9); box-shadow:0 4px 12px rgba(14,165,233,.25) }
+    .list{ position:absolute; left:0; right:0; bottom:56px; margin:0 12px; width:auto; max-height:40%; overflow:auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; box-shadow:0 -8px 24px rgba(0,0,0,.18); display:none }
+    #settingsBackdrop{ border:none; box-shadow:none; }
+    .list.show{ display:block }
+    .list, .list .row, .list .row *{ color:#0f172a !important }
+    #settingsBackdrop{ border:none; box-shadow:none }
+    .row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-bottom:1px solid #eef2f7; font-size:13px; background:#ffffff }
+    .row .qty{ display:flex; align-items:center; gap:6px }
+    .icon-btn{ width:26px; height:26px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; cursor:pointer; color:#0f172a !important }
+    #settingsPanel{ border-radius:16px !important; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.3) !important; border:none !important }
+    #settingsPanel .row{ padding:8px 10px; font-size:10px; gap:6px; transition:background .2s ease; border-bottom:1px solid #f1f5f9 }
+    #settingsPanel .row:last-child{ border-bottom:none }
+    #settingsPanel .row:not(.header-row):hover{ background:#f8fafc }
+    #settingsPanel .icon-btn{ width:38px; height:22px; font-size:8px; padding:0; border-radius:8px; background:linear-gradient(180deg,#3b82f6,#2563eb); color:#fff !important; border:none; font-weight:600; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; box-shadow:0 2px 6px rgba(37,99,235,.25) }
+    #settingsPanel .icon-btn:hover{ transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,.4) }
+    #settingsPanel .icon-btn:active{ transform:translateY(0px) }
+    #settingsPanel select{ font-size:9px; padding:3px 6px; border-radius:6px; border:1px solid #e2e8f0; background:#f8fafc; cursor:pointer; transition:border .2s ease }
+    #settingsPanel select:hover{ border-color:#94a3b8 }
+    #settingsPanel select:focus{ outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.1) }
+    #settingsPanel .header-row{ background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; font-weight:700; font-size:11px; padding:10px; border:none; justify-content:center; letter-spacing:.3px }
+    #settingsPanel strong{ font-size:10px; color:#0f172a }
+    #settingsPanel span{ font-size:10px; color:#475569 }
+  </style>
+</head>
+<body class="body">
+  <img src="logo.png" alt="HAPOS Logo" class="page-logo-large">
+  <div class="viewport">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen" role="application" aria-label="Point of Sale">
+        <header>
+          <button class="toggle-btn" id="toggleSidebar">☰</button>
+          <h1>HaposLight</h1>
+          <div class="status"><span id="itemCount">0</span> items • €<span id="total">0.00</span></div>
+        </header>
+        <div class="content">
+          <nav class="categories" aria-label="Categories" id="categories"></nav>
+          <section class="grid" id="grid" aria-label="Products"></section>
+        </div>
+        <div class="footer">
+          <div class="cart"><button class="btn secondary" id="toggleCart">Cart</button><span id="cartSummary">Empty cart</span></div>
+          <button class="btn" id="checkout">Checkout</button>
+        </div>
+        <div class="list" id="cartList" aria-label="Cart list"></div>
+        <div class="list" id="settingsPanel" aria-label="Settings" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:240px; max-height:280px; z-index:4; display:none; padding:0">
+          <div class="row header-row">⚙ Settings</div>
+          <div class="row"><strong>👤 Cashier</strong><select id="cashierSel"><option>Alex</option><option>Sam</option><option>Taylor</option></select></div>
+          <div class="row"><span>📄 Day Z Report</span><button class="icon-btn" id="dayZ">Run</button></div>
+          <div class="row"><span>📄 Day X Report</span><button class="icon-btn" id="dayX">Run</button></div>
+          <div class="row"><span>📂 Categories</span><button class="icon-btn" id="categoriesBtn">Open</button></div>
+          <div class="row"><span>➕ Add Product</span><button class="icon-btn" id="addProductBtn">Open</button></div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <script>
+    const data = {
+      categories: ["Coffee", "Bakery", "Snacks", "Drinks", "Merch"],
+      products: {
+        Coffee: [
+          {name:"Espresso", price:2.50, img:"https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=200&h=200&fit=crop"},
+          {name:"Americano", price:3.00, img:"https://images.unsplash.com/photo-1518057111178-44a106bad636?w=200&h=200&fit=crop"},
+          {name:"Latte", price:3.50, img:"https://images.unsplash.com/photo-1561882468-9110e03e0f78?w=200&h=200&fit=crop"},
+          {name:"Cappuccino", price:3.50, img:"https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200&h=200&fit=crop"},
+          {name:"Mocha", price:3.80, img:"https://images.unsplash.com/photo-1607260550778-aa9d29444ce1?w=200&h=200&fit=crop"},
+          {name:"Flat White", price:3.60, img:"https://images.unsplash.com/photo-1585494156145-1c60a4fe952b?w=200&h=200&fit=crop"},
+          {name:"Macchiato", price:2.80, img:"https://images.unsplash.com/photo-1557006021-b85faa2bc5e2?w=200&h=200&fit=crop"},
+          {name:"Iced Latte", price:3.70, img:"https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=200&h=200&fit=crop"},
+          {name:"Cold Brew", price:3.90, img:"https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200&h=200&fit=crop"},
+          {name:"Affogato", price:4.20, img:"https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=200&h=200&fit=crop"},
+          {name:"Ristretto", price:2.60, img:"https://images.unsplash.com/photo-1511920170033-f8396924c348?w=200&h=200&fit=crop"},
+          {name:"Cortado", price:3.20, img:"https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=200&fit=crop"},
+          {name:"Iced Americano", price:3.10, img:"https://images.unsplash.com/photo-1534778101976-62847782c213?w=200&h=200&fit=crop"},
+          {name:"Irish Coffee", price:4.50, img:"https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200&h=200&fit=crop"},
+          {name:"Vienna Coffee", price:4.00, img:"https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=200&h=200&fit=crop"},
+          {name:"Turkish Coffee", price:2.70, img:"https://images.unsplash.com/photo-1610889556528-9a770e32642f?w=200&h=200&fit=crop"},
+          {name:"Caramel Latte", price:4.00, img:"https://images.unsplash.com/photo-1599639957043-f3aa5c986398?w=200&h=200&fit=crop"},
+          {name:"Iced Mocha", price:4.10, img:"https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=200&h=200&fit=crop"},
+          {name:"Frappuccino", price:4.50, img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200&h=200&fit=crop"}
+        ],
+        Bakery: [
+          {name:"Croissant", price:2.20, img:"https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200&h=200&fit=crop"},
+          {name:"Chocolate Muffin", price:2.50, img:"https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=200&h=200&fit=crop"},
+          {name:"Bagel", price:1.80, img:"https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=200&h=200&fit=crop"},
+          {name:"Brownie", price:2.30, img:"https://images.unsplash.com/photo-1607920591413-4ec007e70023?w=200&h=200&fit=crop"},
+          {name:"Cookie", price:1.50, img:"https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=200&h=200&fit=crop"},
+          {name:"Banana Bread", price:2.60, img:"https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=200&h=200&fit=crop"},
+          {name:"Apple Pie", price:3.00, img:"https://images.unsplash.com/photo-1535920527002-b35e96722eb9?w=200&h=200&fit=crop"},
+          {name:"Donut", price:1.90, img:"https://images.unsplash.com/photo-1551024601-bec78aea704b?w=200&h=200&fit=crop"},
+          {name:"Strudel", price:3.10, img:"https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=200&h=200&fit=crop"},
+          {name:"Puff Pastry", price:2.10, img:"https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&h=200&fit=crop"},
+          {name:"Pound Cake", price:2.80, img:"https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=200&h=200&fit=crop"},
+          {name:"Danish Pastry", price:2.50, img:"https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop"},
+          {name:"Cupcake", price:2.40, img:"https://images.unsplash.com/photo-1426869981800-95ebf51ce900?w=200&h=200&fit=crop"},
+          {name:"Tiramisu", price:3.50, img:"https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=200&h=200&fit=crop"}
+        ],
+        Snacks: [
+          {name:"Chips", price:1.20, img:"https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200&h=200&fit=crop"},
+          {name:"Granola Bar", price:1.50, img:"https://images.unsplash.com/photo-1590301157890-4810ed352733?w=200&h=200&fit=crop"},
+          {name:"Nuts Mix", price:1.80, img:"https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=200&h=200&fit=crop"},
+          {name:"Pretzel", price:1.30, img:"https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&h=200&fit=crop"},
+          {name:"Popcorn", price:1.40, img:"https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=200&h=200&fit=crop"},
+          {name:"Protein Bar", price:2.10, img:"https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=200&h=200&fit=crop"},
+          {name:"Dried Fruit", price:1.90, img:"https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=200&h=200&fit=crop"},
+          {name:"Jerky", price:2.50, img:"https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=200&h=200&fit=crop"},
+          {name:"Candy", price:0.90, img:"https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=200&h=200&fit=crop"},
+          {name:"Almonds", price:1.70, img:"https://images.unsplash.com/photo-1608797178974-15b35a64ede9?w=200&h=200&fit=crop"},
+          {name:"Cashews", price:2.00, img:"https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=200&h=200&fit=crop"}
+        ],
+        Drinks: [
+          {name:"Water", price:1.00, img:"https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&h=200&fit=crop"},
+          {name:"Sparkling Water", price:1.50, img:"https://images.unsplash.com/photo-1523362628745-0c100150b504?w=200&h=200&fit=crop"},
+          {name:"Orange Juice", price:2.00, img:"https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&h=200&fit=crop"},
+          {name:"Iced Tea", price:1.70, img:"https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200&h=200&fit=crop"},
+          {name:"Cola", price:1.60, img:"https://images.unsplash.com/photo-1554866585-cd94860890b7?w=200&h=200&fit=crop"},
+          {name:"Milkshake", price:2.80, img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200&h=200&fit=crop"},
+          {name:"Diet Cola", price:1.60, img:"https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=200&h=200&fit=crop"},
+          {name:"Ginger Ale", price:1.70, img:"https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=200&h=200&fit=crop"},
+          {name:"Green Tea", price:1.80, img:"https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=200&h=200&fit=crop"},
+          {name:"Hot Chocolate", price:2.50, img:"https://images.unsplash.com/photo-1517578239113-b03992dcdd25?w=200&h=200&fit=crop"},
+          {name:"Smoothie", price:3.50, img:"https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=200&h=200&fit=crop"}
+        ],
+        Merch: [
+          {name:"Mug", price:8.00, img:"https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=200&h=200&fit=crop"},
+          {name:"T-Shirt", price:15.00, img:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop"},
+          {name:"Beans 250g", price:6.50, img:"https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=200&fit=crop"},
+          {name:"Thermos", price:18.00, img:"https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=200&h=200&fit=crop"},
+          {name:"Sticker Pack", price:3.00, img:"https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=200&h=200&fit=crop"},
+          {name:"Bean 1kg", price:22.00, img:"https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=200&h=200&fit=crop"},
+          {name:"Cap", price:12.00, img:"https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&h=200&fit=crop"},
+          {name:"Tote Bag", price:10.00, img:"https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=200&h=200&fit=crop"},
+          {name:"Keychain", price:2.50, img:"https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=200&h=200&fit=crop"},
+          {name:"Notebook", price:5.00, img:"https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=200&h=200&fit=crop"},
+          {name:"Pen Set", price:4.50, img:"https://images.unsplash.com/photo-1517059224940-d4af9eec41b7?w=200&h=200&fit=crop"},
+          {name:"Travel Mug", price:16.00, img:"https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=200&h=200&fit=crop"},
+          {name:"Water Bottle", price:13.00, img:"https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=200&h=200&fit=crop"},
+          {name:"Hoodie", price:35.00, img:"https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200&h=200&fit=crop"},
+          {name:"Pin Set", price:6.00, img:"https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=200&h=200&fit=crop"}
+        ]
+      }
+    };
+
+    const state = { category: data.categories[0], cart: [] };
+    const $ = (sel)=>document.querySelector(sel);
+    const fmt = (n)=>n.toFixed(2);
+
+    function renderCategories(){
+      const c = $('#categories'); c.innerHTML = '';
+      const icons = { Coffee:'☕', Bakery:'🥐', Snacks:'🍪', Drinks:'🥤', Merch:'🛍️' };
+      data.categories.forEach(cat => {
+        const el = document.createElement('button');
+        el.className = 'cat' + (cat===state.category ? ' active' : '');
+        el.textContent = `${icons[cat]} ${cat}`;
+        el.onclick = ()=>{ state.category = cat; renderCategories(); renderGrid(); };
+        c.appendChild(el);
+      });
+      // Push settings further down
+      const spacer = document.createElement('div'); spacer.style.flex = '1'; c.appendChild(spacer);
+      const setBtn = document.createElement('button'); setBtn.className = 'cat'; setBtn.id='openSettings'; setBtn.type='button'; setBtn.textContent = '⚙ Settings'; setBtn.setAttribute('aria-controls','settingsPanel'); c.appendChild(setBtn);
+    }
+
+    function renderGrid(){
+      const g = $('#grid'); g.innerHTML = '';
+      data.products[state.category].forEach(p => {
+        const el = document.createElement('button');
+        el.className = 'item';
+        el.innerHTML = `<img src="${p.img}" alt="${p.name}" loading="lazy"><div class="name">${p.name}</div><div class="price">€${fmt(p.price)}</div>`;
+        el.onclick = ()=>addToCart(p);
+        g.appendChild(el);
+      });
+    }
+
+    function addToCart(p){
+      const found = state.cart.find(i=>i.name===p.name);
+      if(found){ found.qty++; } else { state.cart.push({name:p.name, price:p.price, qty:1}); }
+      updateStatus(); renderCartList();
+    }
+
+    function updateStatus(){
+      const count = state.cart.reduce((a,i)=>a+i.qty,0);
+      const total = state.cart.reduce((a,i)=>a+i.qty*i.price,0);
+      $('#itemCount').textContent = count; $('#total').textContent = fmt(total);
+      $('#cartSummary').textContent = count ? `${count} item(s) • €${fmt(total)}` : 'Empty cart';
+    }
+
+    function renderCartList(){
+      const list = $('#cartList'); list.innerHTML = '';
+      state.cart.forEach(i=>{
+        const row = document.createElement('div'); row.className='row';
+        row.innerHTML = `
+          <div class="c-name">${i.name}</div>
+          <div class="qty">
+            <button class="icon-btn" aria-label="Decrease" onclick="window.dec('${i.name}')">-</button>
+            <span>${i.qty}</span>
+            <button class="icon-btn" aria-label="Increase" onclick="window.inc('${i.name}')">+</button>
+          </div>
+          <div class="c-total">€${fmt(i.qty*i.price)}</div>`;
+        list.appendChild(row);
+      });
+      if(!state.cart.length){ const empty = document.createElement('div'); empty.className='row'; empty.textContent='Cart is empty'; list.appendChild(empty); }
+    }
+
+    window.inc = (name)=>{ const i = state.cart.find(x=>x.name===name); if(i){ i.qty++; updateStatus(); renderCartList(); } };
+    window.dec = (name)=>{
+      const i = state.cart.find(x=>x.name===name); if(!i) return;
+      i.qty--; if(i.qty<=0){ state.cart = state.cart.filter(x=>x.name!==name); }
+      updateStatus(); renderCartList();
+    };
+
+    $('#toggleCart').onclick = ()=>{ const l=$('#cartList'); l.classList.toggle('show'); if(l.classList.contains('show')) $('#toggleCart').textContent='Hide Cart'; else $('#toggleCart').textContent='Cart'; };
+    $('#checkout').onclick = ()=>{
+      state.cart = []; updateStatus(); renderCartList(); $('#cartList').classList.remove('show');
+    };
+
+    renderCategories(); renderGrid(); updateStatus();
+
+    // Sidebar toggle
+    $('#toggleSidebar').onclick = ()=>{
+      $('.content').classList.toggle('collapsed');
+    };
+
+    // Settings panel toggle
+    document.addEventListener('click', (e) => {
+      if(e.target && e.target.id === 'openSettings') {
+        const panel = $('#settingsPanel');
+        if(panel.style.display === 'block') {
+          panel.style.display = 'none';
+        } else {
+          panel.style.display = 'block';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
