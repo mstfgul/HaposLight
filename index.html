@@ -59,6 +59,9 @@
     #settingsPanel .header-row{ background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; font-weight:700; font-size:11px; padding:10px; border:none; justify-content:center; letter-spacing:.3px }
     #settingsPanel strong{ font-size:10px; color:#0f172a }
     #settingsPanel span{ font-size:10px; color:#475569 }
+    #orderTypeModal{ border-radius:16px !important; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.3) !important; border:none !important; position:absolute !important; top:50% !important; left:46% !important; transform:translate(-50%,-50%) !important }
+    #orderTypeBackdrop{ position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:4; display:none }
+    #orderTypeBackdrop.show{ display:block }
   </style>
 </head>
 <body class="body">
@@ -87,6 +90,15 @@
           <div class="row"><span>📄 Day X Report</span><button class="icon-btn" id="dayX">Run</button></div>
           <div class="row"><span>📂 Categories</span><button class="icon-btn" id="categoriesBtn">Open</button></div>
           <div class="row"><span>➕ Add Product</span><button class="icon-btn" id="addProductBtn">Open</button></div>
+        </div>
+        <div id="orderTypeBackdrop"></div>
+        <div class="list" id="orderTypeModal" aria-label="Order Type Selection" style="width:280px; max-height:200px; z-index:5; display:none; padding:0">
+          <div class="row header-row">📦 Select Order Type</div>
+          <div class="row" style="flex-direction:column; gap:10px; padding:16px;">
+            <button class="btn" id="takeAwayBtn" style="width:100%; padding:14px; font-size:15px; background:linear-gradient(180deg,#3b82f6,#2563eb);">🥡 Take Away</button>
+            <button class="btn" id="eatInBtn" style="width:100%; padding:14px; font-size:15px; background:linear-gradient(180deg,#22c55e,#16a34a);">🍽️ Eat In</button>
+            <button class="btn secondary" id="cancelOrderBtn" style="width:100%; padding:10px; font-size:13px; background:linear-gradient(180deg,#ef4444,#dc2626);">Cancel</button>
+          </div>
         </div>
       </div>
       <div class="home-indicator"></div>
@@ -248,8 +260,52 @@
     };
 
     $('#toggleCart').onclick = ()=>{ const l=$('#cartList'); l.classList.toggle('show'); if(l.classList.contains('show')) $('#toggleCart').textContent='Hide Cart'; else $('#toggleCart').textContent='Cart'; };
+    
+    function completeSale(orderType){
+      if(state.cart.length === 0) return;
+      // Complete the sale
+      const total = state.cart.reduce((a,i)=>a+i.qty*i.price,0);
+      console.log(`Sale completed: ${orderType} - Total: €${fmt(total)}`);
+      // Clear cart
+      state.cart = []; 
+      updateStatus(); 
+      renderCartList(); 
+      $('#cartList').classList.remove('show');
+      // Close modal
+      hideOrderTypeModal();
+    }
+
+    function showOrderTypeModal(){
+      $('#orderTypeBackdrop').classList.add('show');
+      $('#orderTypeModal').style.display = 'block';
+    }
+
+    function hideOrderTypeModal(){
+      $('#orderTypeBackdrop').classList.remove('show');
+      $('#orderTypeModal').style.display = 'none';
+    }
+
     $('#checkout').onclick = ()=>{
-      state.cart = []; updateStatus(); renderCartList(); $('#cartList').classList.remove('show');
+      if(state.cart.length === 0) return;
+      // Show modal
+      showOrderTypeModal();
+    };
+
+    $('#takeAwayBtn').onclick = ()=>{
+      completeSale('Take Away');
+    };
+
+    $('#eatInBtn').onclick = ()=>{
+      completeSale('Eat In');
+    };
+
+    $('#cancelOrderBtn').onclick = ()=>{
+      hideOrderTypeModal();
+    };
+
+    // Close modal when backdrop is clicked
+    $('#orderTypeBackdrop').onclick = ()=>{
+      hideOrderTypeModal();
     };
 
     renderCategories(); renderGrid(); updateStatus();
