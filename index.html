@@ -3,101 +3,738 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HaposLight</title>
+  <title>HaposLight POS</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    /* App UI inside the phone - polished */
-    .screen { background: transparent; display: grid; grid-template-rows: auto 1fr auto; height:100%; position:relative; }
-    header { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:10px; padding:14px 18px; background:linear-gradient(90deg,#0ea5e9,#6366f1); color:#fff; box-shadow:0 4px 12px rgba(0,0,0,.18); }
-    header h1{ font-size:17px; margin:0; letter-spacing:.2px }
-    body::before{ content:''; position:fixed; inset:0; background-image:url('logo.png'); background-size:55px; background-repeat:repeat; opacity:0.06; z-index:0; pointer-events:none; }
-    header .toggle-btn{ background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all .2s ease }
-    header .toggle-btn:hover{ background:rgba(255,255,255,.3) }
-    .status{ margin-left:auto; font-size:10px; opacity:.9; background:#0b1220; padding:4px 6px; border-radius:6px; white-space:nowrap; }
-    .content{ display:grid; grid-template-columns: 120px 1fr; gap:0; overflow:hidden; transition:grid-template-columns .3s ease; }
-    .content.collapsed{ grid-template-columns: 0 1fr; }
-    .content.collapsed .categories{ width:0; overflow:hidden; padding:0; opacity:0; visibility:hidden }
-    .categories{ display:flex; flex-direction:column; gap:8px; overflow-y:auto; overflow-x:hidden; padding:12px; background:#eef2f7; border-right:1px solid #d7dee8; transition:all .3s ease }
-    .cat{ padding:10px 12px; border-radius:12px; background:linear-gradient(180deg,#ffffff,#f4f7fb); border:1px solid #cbd5e1; cursor:pointer; white-space:nowrap; font-size:13px; font-weight:600; color:#0f172a; box-shadow:0 2px 8px rgba(99,102,241,.15); width:100%; text-align:left }
-    .cat:hover{ border-color:#94a3b8 }
-    .cat.active{ background:linear-gradient(180deg,#22d3ee,#0ea5e9); color:#032b36; border-color:#0ea5e9; box-shadow:0 6px 16px rgba(14,165,233,.35) }
-    .grid{ padding:10px; display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; height:100%; overflow-y:auto; overflow-x:hidden; align-content:start; -webkit-overflow-scrolling: touch; background:#f8fafc }
-    .content.collapsed .grid{ grid-template-columns: repeat(3, 1fr); gap:8px; padding:8px }
-    .content.collapsed .item{ min-height:130px; border-radius:12px }
-    .content.collapsed .item img{ height:70px }
-    .content.collapsed .item .name{ font-size:10px; padding:6px 6px 4px 6px }
-    .content.collapsed .item .price{ font-size:10px; padding:5px 6px }
-    .item{ background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:0; display:flex; flex-direction:column; gap:0; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.06); transition:all .2s ease; align-items:stretch; overflow:hidden; position:relative; min-height:150px }
-    .item:hover{ transform:translateY(-4px); box-shadow:0 12px 24px rgba(99,102,241,.2); border-color:#c7d2fe }
-    .item:active{ transform:translateY(-2px) }
-    .item img{ width:100%; height:85px; object-fit:cover; border-radius:0; background:linear-gradient(135deg,#667eea20,#764ba220); flex-shrink:0 }
-    .item .name{ font-size:11px; font-weight:600; color:#1e293b; padding:8px 8px 6px 8px; line-height:1.3; flex-grow:1 }
-    .item .price{ font-size:11px; color:#fff; background:linear-gradient(135deg,#10b981,#059669); border:none; padding:6px 8px; font-weight:700; text-align:center; letter-spacing:.2px; flex-shrink:0 }
-    .footer{ position:sticky; bottom:0; display:flex; align-items:center; gap:10px; padding:12px; background:linear-gradient(90deg,#f1f5f9,#e2e8f0); border-top:1px solid #d7dee8; box-shadow:0 -4px 12px rgba(0,0,0,.12) }
-    .cart{ flex:1; display:flex; align-items:center; gap:8px; font-size:13px; color:#0f172a }
-    .btn{ background:linear-gradient(180deg,#22c55e,#16a34a); color:#fff; border:none; border-radius:12px; padding:10px 14px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,.25) }
-    .btn:hover{ filter:brightness(1.05) }
-    .btn.secondary{ background:linear-gradient(180deg,#60a5fa,#0ea5e9); box-shadow:0 4px 12px rgba(14,165,233,.25) }
-    .list{ position:absolute; left:0; right:0; bottom:56px; margin:0 12px; width:auto; max-height:40%; overflow:auto; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; box-shadow:0 -8px 24px rgba(0,0,0,.18); display:none }
-    #settingsBackdrop{ border:none; box-shadow:none; }
-    .list.show{ display:block }
-    .list, .list .row, .list .row *{ color:#0f172a !important }
-    #settingsBackdrop{ border:none; box-shadow:none }
-    .row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; border-bottom:1px solid #eef2f7; font-size:13px; background:#ffffff }
-    .row .qty{ display:flex; align-items:center; gap:6px }
-    .icon-btn{ width:26px; height:26px; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; cursor:pointer; color:#0f172a !important }
-    #settingsPanel{ border-radius:16px !important; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.3) !important; border:none !important }
-    #settingsPanel .row{ padding:8px 10px; font-size:10px; gap:6px; transition:background .2s ease; border-bottom:1px solid #f1f5f9 }
-    #settingsPanel .row:last-child{ border-bottom:none }
-    #settingsPanel .row:not(.header-row):hover{ background:#f8fafc }
-    #settingsPanel .icon-btn{ width:38px; height:22px; font-size:8px; padding:0; border-radius:8px; background:linear-gradient(180deg,#3b82f6,#2563eb); color:#fff !important; border:none; font-weight:600; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; box-shadow:0 2px 6px rgba(37,99,235,.25) }
-    #settingsPanel .icon-btn:hover{ transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,.4) }
-    #settingsPanel .icon-btn:active{ transform:translateY(0px) }
-    #settingsPanel select{ font-size:9px; padding:3px 6px; border-radius:6px; border:1px solid #e2e8f0; background:#f8fafc; cursor:pointer; transition:border .2s ease }
-    #settingsPanel select:hover{ border-color:#94a3b8 }
-    #settingsPanel select:focus{ outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.1) }
-    #settingsPanel .header-row{ background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; font-weight:700; font-size:11px; padding:10px; border:none; justify-content:center; letter-spacing:.3px }
-    #settingsPanel strong{ font-size:10px; color:#0f172a }
-    #settingsPanel span{ font-size:10px; color:#475569 }
-    #orderTypeModal{ border-radius:16px !important; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.3) !important; border:none !important; position:absolute !important; top:50% !important; left:46% !important; transform:translate(-50%,-50%) !important }
-    #orderTypeBackdrop{ position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:4; display:none }
-    #orderTypeBackdrop.show{ display:block }
+    /* Modern Single-Screen POS Layout */
+    .screen {
+      background: #f8fafc;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      height:100%;
+      position:relative;
+    }
+
+    /* Header */
+    header {
+      position:sticky;
+      top:0;
+      z-index:10;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px 16px;
+      background:#1e293b;
+      color:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.2);
+      border-bottom:3px solid #0ea5e9;
+    }
+    header h1{ font-size:18px; margin:0; letter-spacing:.5px; font-weight:700; }
+
+    .phone.tablet header{ padding:18px 24px; gap:16px; }
+    .phone.tablet header h1{ font-size:26px; }
+
+    /* Main Content Area */
+    .main-content{
+      display:grid;
+      grid-template-columns: 1fr 230px;
+      gap:0;
+      overflow:hidden;
+      height:100%;
+    }
+
+    .phone.tablet .main-content{
+      grid-template-columns: 1fr 380px;
+    }
+
+    /* Left Side: Products */
+    .products-area{
+      display:grid;
+      grid-template-rows:auto 1fr;
+      background:#fff;
+      overflow:hidden;
+      border-right:3px solid #e2e8f0;
+    }
+
+    .categories-bar{
+      display:flex;
+      gap:6px;
+      padding:12px;
+      background:#f1f5f9;
+      overflow-x:auto;
+      border-bottom:2px solid #cbd5e1;
+      flex-wrap:wrap;
+    }
+    .cat{
+      padding:8px 16px;
+      border-radius:8px;
+      background:#fff;
+      border:2px solid #cbd5e1;
+      cursor:pointer;
+      white-space:nowrap;
+      font-size:12px;
+      font-weight:600;
+      color:#475569;
+      transition:all .2s ease;
+      flex-shrink:0;
+    }
+    .cat:hover{ background:#f8fafc; border-color:#94a3b8; }
+    .cat.active{ background:#0ea5e9; color:#fff; border-color:#0ea5e9; box-shadow:0 2px 8px rgba(14,165,233,.3); }
+
+    .phone.tablet .categories-bar{ padding:16px; gap:10px; }
+    .phone.tablet .cat{ padding:12px 24px; font-size:16px; border-radius:12px; }
+
+    .products-grid{
+      padding:12px;
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap:10px;
+      height:100%;
+      overflow-y:auto;
+      align-content:start;
+      background:#f8fafc;
+    }
+
+    .phone.tablet .products-grid{
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap:14px;
+      padding:16px;
+    }
+
+    .product-item{
+      background:linear-gradient(135deg, #10b981, #059669);
+      border:none;
+      border-radius:12px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      cursor:pointer;
+      transition:all .2s ease;
+      align-items:center;
+      justify-content:center;
+      min-height:90px;
+      box-shadow:0 2px 8px rgba(16,185,129,.3);
+    }
+    .product-item:hover{
+      transform:translateY(-2px);
+      box-shadow:0 4px 12px rgba(16,185,129,.4);
+    }
+    .product-item:active{ transform:scale(0.97); }
+    .product-item .name{ font-size:13px; font-weight:700; color:#fff; text-align:center; line-height:1.2; }
+    .product-item .price{ font-size:12px; color:#fff; font-weight:600; text-align:center; background:rgba(0,0,0,.2); padding:4px 10px; border-radius:6px; }
+
+    .phone.tablet .product-item{ padding:16px; gap:8px; min-height:130px; border-radius:16px; }
+    .phone.tablet .product-item .name{ font-size:17px; }
+    .phone.tablet .product-item .price{ font-size:15px; padding:6px 14px; }
+
+    /* Right Side: Cart & Checkout */
+    .cart-area{
+      background:#fff;
+      display:grid;
+      grid-template-rows:auto 1fr auto auto auto auto;
+      overflow:hidden;
+      box-shadow:-3px 0 12px rgba(0,0,0,.08);
+    }
+
+    .cart-header{
+      padding:8px 10px;
+      background:#1e293b;
+      color:#fff;
+      font-size:11px;
+      font-weight:700;
+      border-bottom:2px solid #334155;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .phone.tablet .cart-header{ padding:16px 20px; font-size:18px; }
+
+    .cart-items{
+      overflow-y:auto;
+      padding:8px;
+      background:#f8fafc;
+    }
+
+    .phone.tablet .cart-items{ padding:16px; }
+
+    .cart-item{
+      display:grid;
+      grid-template-columns:1fr auto;
+      align-items:center;
+      gap:4px;
+      padding:6px 8px;
+      background:#fff;
+      border-radius:6px;
+      margin-bottom:6px;
+      border:1px solid #e2e8f0;
+      box-shadow:0 1px 3px rgba(0,0,0,.05);
+    }
+    .cart-item-name{ font-size:10px; font-weight:600; color:#1e293b; line-height:1.2; }
+    .cart-item-price{ font-size:9px; color:#64748b; }
+    .cart-item-qty{
+      display:flex;
+      align-items:center;
+      gap:3px;
+      background:#f1f5f9;
+      padding:2px;
+      border-radius:4px;
+    }
+    .qty-btn{
+      width:20px;
+      height:20px;
+      border-radius:3px;
+      border:none;
+      background:#0ea5e9;
+      color:#fff;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .qty-btn:hover{ background:#0284c7; }
+    .qty-value{ font-size:10px; font-weight:700; color:#1e293b; min-width:16px; text-align:center; }
+    .cart-item-total{ font-size:11px; font-weight:700; color:#059669; }
+
+    .phone.tablet .cart-item{ padding:14px 16px; gap:12px; margin-bottom:12px; border-radius:12px; grid-template-columns:1fr auto auto; }
+    .phone.tablet .cart-item-name{ font-size:15px; }
+    .phone.tablet .cart-item-price{ font-size:13px; }
+    .phone.tablet .qty-btn{ width:32px; height:32px; font-size:16px; }
+    .phone.tablet .qty-value{ font-size:15px; min-width:28px; }
+    .phone.tablet .cart-item-total{ font-size:16px; }
+
+    .empty-cart{
+      text-align:center;
+      padding:20px 10px;
+      color:#94a3b8;
+      font-size:10px;
+    }
+
+    .phone.tablet .empty-cart{ padding:60px 20px; font-size:16px; }
+
+    /* Order Type Selection */
+    .order-type-section{
+      padding:8px 10px;
+      background:#f1f5f9;
+      border-top:2px solid #e2e8f0;
+    }
+    .section-label{
+      font-size:9px;
+      font-weight:700;
+      color:#475569;
+      margin-bottom:5px;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .order-type-buttons{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:5px;
+    }
+    .order-type-btn{
+      padding:7px;
+      border-radius:6px;
+      border:2px solid #cbd5e1;
+      background:#fff;
+      color:#475569;
+      font-size:10px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+    }
+    .order-type-btn:hover{ border-color:#94a3b8; }
+    .order-type-btn.selected{
+      background:#8b5cf6;
+      color:#fff;
+      border-color:#8b5cf6;
+      box-shadow:0 2px 8px rgba(139,92,246,.3);
+    }
+
+    .phone.tablet .order-type-section{ padding:16px 20px; }
+    .phone.tablet .section-label{ font-size:14px; margin-bottom:12px; }
+    .phone.tablet .order-type-buttons{ gap:12px; }
+    .phone.tablet .order-type-btn{ padding:14px; font-size:15px; border-radius:10px; }
+
+    /* Payment Method Selection */
+    .payment-section{
+      padding:8px 10px;
+      background:#f8fafc;
+      border-top:2px solid #e2e8f0;
+    }
+    .payment-buttons{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:5px;
+    }
+    .payment-btn{
+      padding:7px;
+      border-radius:6px;
+      border:2px solid #cbd5e1;
+      background:#fff;
+      color:#475569;
+      font-size:10px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+    }
+    .payment-btn:hover{ border-color:#94a3b8; }
+    .payment-btn.selected{
+      background:#f59e0b;
+      color:#fff;
+      border-color:#f59e0b;
+      box-shadow:0 2px 8px rgba(245,158,11,.3);
+    }
+
+    .phone.tablet .payment-section{ padding:16px 20px; }
+    .phone.tablet .payment-buttons{ gap:12px; }
+    .phone.tablet .payment-btn{ padding:14px; font-size:15px; border-radius:10px; }
+
+    /* Total & Checkout */
+    .checkout-section{
+      padding:8px 10px;
+      background:#1e293b;
+      border-top:3px solid #0ea5e9;
+    }
+    .total-display{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+      color:#fff;
+    }
+    .total-label{ font-size:10px; font-weight:600; }
+    .total-amount{ font-size:18px; font-weight:900; color:#0ea5e9; }
+
+    .checkout-btn{
+      width:100%;
+      padding:10px;
+      border-radius:8px;
+      border:none;
+      background:linear-gradient(135deg, #10b981, #059669);
+      color:#fff;
+      font-size:11px;
+      font-weight:900;
+      cursor:pointer;
+      transition:all .2s ease;
+      box-shadow:0 4px 12px rgba(16,185,129,.4);
+      text-transform:uppercase;
+      letter-spacing:.5px;
+    }
+    .checkout-btn:hover{
+      transform:translateY(-2px);
+      box-shadow:0 6px 16px rgba(16,185,129,.5);
+    }
+    .checkout-btn:active{ transform:scale(0.98); }
+    .checkout-btn:disabled{
+      background:#64748b;
+      cursor:not-allowed;
+      transform:none;
+      box-shadow:none;
+    }
+
+    .phone.tablet .checkout-section{ padding:16px 20px; }
+    .phone.tablet .total-label{ font-size:16px; }
+    .phone.tablet .total-amount{ font-size:32px; }
+    .phone.tablet .checkout-btn{ padding:18px; font-size:18px; border-radius:12px; }
+
+    /* Settings Button */
+    .settings-btn{
+      padding:6px 10px;
+      border-radius:6px;
+      border:1px solid #475569;
+      background:#334155;
+      color:#fff;
+      font-size:11px;
+      font-weight:600;
+      cursor:pointer;
+      transition:all .2s ease;
+      margin-left:auto;
+    }
+    .settings-btn:hover{ background:#475569; }
+
+    .phone.tablet .settings-btn{ padding:10px 18px; font-size:14px; border-radius:8px; }
+
+    /* Settings Popup */
+    #settingsBackdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      z-index:15;
+      display:none;
+    }
+    #settingsBackdrop.show{ display:block; }
+
+    #settingsPopup{
+      position:absolute;
+      top:50px;
+      right:10px;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 10px 40px rgba(0,0,0,.3);
+      width:220px;
+      z-index:16;
+      display:none;
+      overflow:hidden;
+    }
+    #settingsPopup.show{ display:block; }
+
+    .phone.tablet #settingsPopup{
+      width:320px;
+      top:70px;
+      right:20px;
+    }
+
+    .settings-header{
+      padding:12px 16px;
+      background:#1e293b;
+      color:#fff;
+      font-size:13px;
+      font-weight:700;
+      border-bottom:2px solid #0ea5e9;
+    }
+
+    .phone.tablet .settings-header{ padding:16px 20px; font-size:16px; }
+
+    .settings-row{
+      padding:12px 16px;
+      border-bottom:1px solid #e2e8f0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .settings-row:last-child{ border-bottom:none; }
+
+    .settings-label{
+      font-size:11px;
+      font-weight:700;
+      color:#475569;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+
+    .settings-row select{
+      padding:8px 12px;
+      border-radius:8px;
+      border:2px solid #cbd5e1;
+      font-size:12px;
+      background:#f8fafc;
+      cursor:pointer;
+      width:100%;
+    }
+
+    .settings-row button{
+      padding:10px;
+      border-radius:8px;
+      border:none;
+      background:#0ea5e9;
+      color:#fff;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+      width:100%;
+    }
+    .settings-row button:hover{ background:#0284c7; }
+
+    .phone.tablet .settings-row{ padding:16px 20px; gap:12px; }
+    .phone.tablet .settings-label{ font-size:13px; }
+    .phone.tablet .settings-row select{ padding:10px 16px; font-size:14px; }
+    .phone.tablet .settings-row button{ padding:12px; font-size:14px; }
+
+    /* Sales Report Modal */
+    #salesReportBackdrop{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.6);
+      z-index:20;
+      display:none;
+      backdrop-filter:blur(4px);
+    }
+    #salesReportBackdrop.show{ display:block; }
+
+    #salesReportModal{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,.4);
+      width:90%;
+      max-width:700px;
+      max-height:80vh;
+      z-index:21;
+      display:none;
+      overflow:hidden;
+    }
+    #salesReportModal.show{ display:block; }
+
+    .report-header{
+      padding:16px 20px;
+      background:#1e293b;
+      color:#fff;
+      font-size:16px;
+      font-weight:700;
+      border-bottom:3px solid #0ea5e9;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .close-btn{
+      background:#334155;
+      border:none;
+      color:#fff;
+      width:32px;
+      height:32px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .close-btn:hover{ background:#475569; }
+
+    .phone.tablet .report-header{ padding:20px 24px; font-size:20px; }
+    .phone.tablet .close-btn{ width:40px; height:40px; font-size:24px; }
+
+    .report-filters{
+      padding:16px;
+      background:#f8fafc;
+      border-bottom:2px solid #e2e8f0;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .report-filters select{
+      padding:8px 12px;
+      border-radius:8px;
+      border:2px solid #cbd5e1;
+      font-size:12px;
+      background:#fff;
+      cursor:pointer;
+    }
+    .report-filters button{
+      padding:8px 16px;
+      border-radius:8px;
+      border:none;
+      background:#0ea5e9;
+      color:#fff;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+      margin-left:auto;
+    }
+    .report-filters button:hover{ background:#0284c7; }
+
+    .phone.tablet .report-filters{ padding:20px; gap:16px; }
+    .phone.tablet .report-filters select{ padding:10px 16px; font-size:14px; }
+    .phone.tablet .report-filters button{ padding:10px 20px; font-size:14px; }
+
+    .report-content{
+      padding:16px;
+      max-height:50vh;
+      overflow-y:auto;
+      background:#fff;
+    }
+
+    .phone.tablet .report-content{ padding:20px; }
+
+    .report-summary{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-bottom:20px;
+    }
+    .summary-card{
+      background:linear-gradient(135deg,#f8fafc,#fff);
+      border:2px solid #e2e8f0;
+      border-radius:12px;
+      padding:16px;
+      text-align:center;
+    }
+    .summary-card .label{ font-size:11px; color:#64748b; margin-bottom:6px; font-weight:600; text-transform:uppercase; }
+    .summary-card .value{ font-size:20px; font-weight:900; color:#1e293b; }
+
+    .phone.tablet .report-summary{ gap:16px; margin-bottom:24px; }
+    .phone.tablet .summary-card{ padding:20px; border-radius:16px; }
+    .phone.tablet .summary-card .label{ font-size:13px; margin-bottom:8px; }
+    .phone.tablet .summary-card .value{ font-size:26px; }
+
+    .sales-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:11px;
+    }
+    .sales-table th{
+      background:#f1f5f9;
+      padding:10px 8px;
+      text-align:left;
+      font-size:11px;
+      font-weight:700;
+      color:#475569;
+      border-bottom:2px solid #cbd5e1;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    .sales-table td{
+      padding:10px 8px;
+      border-bottom:1px solid #e2e8f0;
+      font-size:11px;
+      color:#1e293b;
+    }
+    .sales-table tr:hover{ background:#f8fafc; }
+
+    .phone.tablet .sales-table{ font-size:13px; }
+    .phone.tablet .sales-table th{ padding:12px 10px; font-size:13px; }
+    .phone.tablet .sales-table td{ padding:12px 10px; font-size:13px; }
+
+    .refund-btn{
+      padding:6px 12px;
+      border-radius:6px;
+      border:none;
+      background:#ef4444;
+      color:#fff;
+      font-size:10px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+    }
+    .refund-btn:hover{ background:#dc2626; }
+    .refund-btn:disabled{ background:#94a3b8; cursor:not-allowed; }
+
+    .phone.tablet .refund-btn{ padding:8px 16px; font-size:12px; border-radius:8px; }
+
+    .report-footer{
+      padding:16px;
+      background:#f8fafc;
+      border-top:2px solid #e2e8f0;
+      display:flex;
+      gap:12px;
+    }
+    .report-footer button{
+      flex:1;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all .2s ease;
+    }
+    .export-btn{ background:#0ea5e9; color:#fff; }
+    .export-btn:hover{ background:#0284c7; }
+
+    .phone.tablet .report-footer{ padding:20px; gap:16px; }
+    .phone.tablet .report-footer button{ padding:16px; font-size:16px; }
   </style>
 </head>
 <body class="body">
+  <div class="device-toggle">
+    <button id="phoneBtn" class="active">Phone</button>
+    <button id="tabletBtn">Tablet</button>
+  </div>
   <div class="viewport">
-    <div class="phone">
+    <div class="phone" id="deviceFrame">
       <div class="notch"></div>
       <div class="screen" role="application" aria-label="Point of Sale">
         <header>
-          <button class="toggle-btn" id="toggleSidebar">☰</button>
-          <h1>HaposLight</h1>
-          <div class="status"><span id="itemCount">0</span> items • €<span id="total">0.00</span></div>
+          <h1>HaposLight POS</h1>
+          <button class="settings-btn" id="settingsBtn">Settings</button>
         </header>
-        <div class="content">
-          <nav class="categories" aria-label="Categories" id="categories"></nav>
-          <section class="grid" id="grid" aria-label="Products"></section>
+
+        <div class="main-content">
+          <!-- Left: Products -->
+          <div class="products-area">
+            <div class="categories-bar" id="categories"></div>
+            <div class="products-grid" id="productsGrid"></div>
+          </div>
+
+          <!-- Right: Cart & Checkout -->
+          <div class="cart-area">
+            <div class="cart-header">
+              <span>Current Order</span>
+              <span id="itemCount">0 items</span>
+            </div>
+
+            <div class="cart-items" id="cartItems">
+              <div class="empty-cart">Cart is empty<br>Add products to start</div>
+            </div>
+
+            <div class="order-type-section">
+              <div class="section-label">Order Type</div>
+              <div class="order-type-buttons">
+                <button class="order-type-btn" id="takeAwayBtn" data-type="Take Away">Take Away</button>
+                <button class="order-type-btn" id="eatInBtn" data-type="Eat In">Eat In</button>
+              </div>
+            </div>
+
+            <div class="payment-section">
+              <div class="section-label">Payment Method</div>
+              <div class="payment-buttons">
+                <button class="payment-btn" id="cashBtn" data-method="Cash">Cash</button>
+                <button class="payment-btn" id="cardBtn" data-method="Card">Card</button>
+              </div>
+            </div>
+
+            <div class="checkout-section">
+              <div class="total-display">
+                <span class="total-label">Total</span>
+                <span class="total-amount" id="totalAmount">€0.00</span>
+              </div>
+              <button class="checkout-btn" id="checkoutBtn" disabled>Complete Order</button>
+            </div>
+          </div>
         </div>
-        <div class="footer">
-          <div class="cart"><button class="btn secondary" id="toggleCart">Cart</button><span id="cartSummary">Empty cart</span></div>
-          <button class="btn" id="checkout">Checkout</button>
+
+        <!-- Settings Popup -->
+        <div id="settingsBackdrop"></div>
+        <div id="settingsPopup">
+          <div class="settings-header">Settings</div>
+          <div class="settings-row">
+            <div class="settings-label">Cashier</div>
+            <select id="cashierSel">
+              <option>Alex</option>
+              <option>Sam</option>
+              <option>Taylor</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">Reports</div>
+            <button id="openSalesReportBtn">View Sales Report</button>
+          </div>
         </div>
-        <div class="list" id="cartList" aria-label="Cart list"></div>
-        <div class="list" id="settingsPanel" aria-label="Settings" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:240px; max-height:280px; z-index:4; display:none; padding:0">
-          <div class="row header-row">⚙ Settings</div>
-          <div class="row"><strong>👤 Cashier</strong><select id="cashierSel"><option>Alex</option><option>Sam</option><option>Taylor</option></select></div>
-          <div class="row"><span>📄 Day Z Report</span><button class="icon-btn" id="dayZ">Run</button></div>
-          <div class="row"><span>📄 Day X Report</span><button class="icon-btn" id="dayX">Run</button></div>
-          <div class="row"><span>📂 Categories</span><button class="icon-btn" id="categoriesBtn">Open</button></div>
-          <div class="row"><span>➕ Add Product</span><button class="icon-btn" id="addProductBtn">Open</button></div>
-        </div>
-        <div id="orderTypeBackdrop"></div>
-        <div class="list" id="orderTypeModal" aria-label="Order Type Selection" style="width:280px; max-height:200px; z-index:5; display:none; padding:0">
-          <div class="row header-row">📦 Select Order Type</div>
-          <div class="row" style="flex-direction:column; gap:10px; padding:16px;">
-            <button class="btn" id="takeAwayBtn" style="width:100%; padding:14px; font-size:15px; background:linear-gradient(180deg,#3b82f6,#2563eb);">🥡 Take Away</button>
-            <button class="btn" id="eatInBtn" style="width:100%; padding:14px; font-size:15px; background:linear-gradient(180deg,#22c55e,#16a34a);">🍽️ Eat In</button>
-            <button class="btn secondary" id="cancelOrderBtn" style="width:100%; padding:10px; font-size:13px; background:linear-gradient(180deg,#ef4444,#dc2626);">Cancel</button>
+
+        <!-- Sales Report Modal -->
+        <div id="salesReportBackdrop"></div>
+        <div id="salesReportModal">
+          <div class="report-header">
+            <span>Sales Report</span>
+            <button class="close-btn" id="closeReportBtn">×</button>
+          </div>
+          <div class="report-filters">
+            <select id="reportPeriod">
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="all">All Time</option>
+            </select>
+            <select id="reportPayment">
+              <option value="all">All Payments</option>
+              <option value="Cash">Cash</option>
+              <option value="Card">Card</option>
+            </select>
+            <button id="refreshReportBtn">Refresh</button>
+          </div>
+          <div class="report-content" id="reportContent"></div>
+          <div class="report-footer">
+            <button class="export-btn" id="exportBtn">Export CSV</button>
           </div>
         </div>
       </div>
@@ -110,222 +747,468 @@
       categories: ["Coffee", "Bakery", "Snacks", "Drinks", "Merch"],
       products: {
         Coffee: [
-          {name:"Espresso", price:2.50, img:"https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=200&h=200&fit=crop"},
-          {name:"Americano", price:3.00, img:"https://images.unsplash.com/photo-1518057111178-44a106bad636?w=200&h=200&fit=crop"},
-          {name:"Latte", price:3.50, img:"https://images.unsplash.com/photo-1561882468-9110e03e0f78?w=200&h=200&fit=crop"},
-          {name:"Cappuccino", price:3.50, img:"https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=200&h=200&fit=crop"},
-          {name:"Mocha", price:3.80, img:"https://images.unsplash.com/photo-1607260550778-aa9d29444ce1?w=200&h=200&fit=crop"},
-          {name:"Flat White", price:3.60, img:"https://images.unsplash.com/photo-1585494156145-1c60a4fe952b?w=200&h=200&fit=crop"},
-          {name:"Macchiato", price:2.80, img:"https://images.unsplash.com/photo-1557006021-b85faa2bc5e2?w=200&h=200&fit=crop"},
-          {name:"Iced Latte", price:3.70, img:"https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=200&h=200&fit=crop"},
-          {name:"Cold Brew", price:3.90, img:"https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200&h=200&fit=crop"},
-          {name:"Affogato", price:4.20, img:"https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=200&h=200&fit=crop"},
-          {name:"Ristretto", price:2.60, img:"https://images.unsplash.com/photo-1511920170033-f8396924c348?w=200&h=200&fit=crop"},
-          {name:"Cortado", price:3.20, img:"https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=200&fit=crop"},
-          {name:"Iced Americano", price:3.10, img:"https://images.unsplash.com/photo-1534778101976-62847782c213?w=200&h=200&fit=crop"},
-          {name:"Irish Coffee", price:4.50, img:"https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=200&h=200&fit=crop"},
-          {name:"Vienna Coffee", price:4.00, img:"https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=200&h=200&fit=crop"},
-          {name:"Turkish Coffee", price:2.70, img:"https://images.unsplash.com/photo-1610889556528-9a770e32642f?w=200&h=200&fit=crop"},
-          {name:"Caramel Latte", price:4.00, img:"https://images.unsplash.com/photo-1599639957043-f3aa5c986398?w=200&h=200&fit=crop"},
-          {name:"Iced Mocha", price:4.10, img:"https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=200&h=200&fit=crop"},
-          {name:"Frappuccino", price:4.50, img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200&h=200&fit=crop"}
+          {name:"Espresso", price:2.50},
+          {name:"Americano", price:3.00},
+          {name:"Latte", price:3.50},
+          {name:"Cappuccino", price:3.50},
+          {name:"Mocha", price:3.80},
+          {name:"Flat White", price:3.60},
+          {name:"Macchiato", price:2.80},
+          {name:"Iced Latte", price:3.70},
+          {name:"Cold Brew", price:3.90},
+          {name:"Affogato", price:4.20}
         ],
         Bakery: [
-          {name:"Croissant", price:2.20, img:"https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200&h=200&fit=crop"},
-          {name:"Chocolate Muffin", price:2.50, img:"https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=200&h=200&fit=crop"},
-          {name:"Bagel", price:1.80, img:"https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=200&h=200&fit=crop"},
-          {name:"Brownie", price:2.30, img:"https://images.unsplash.com/photo-1607920591413-4ec007e70023?w=200&h=200&fit=crop"},
-          {name:"Cookie", price:1.50, img:"https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=200&h=200&fit=crop"},
-          {name:"Banana Bread", price:2.60, img:"https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=200&h=200&fit=crop"},
-          {name:"Apple Pie", price:3.00, img:"https://images.unsplash.com/photo-1535920527002-b35e96722eb9?w=200&h=200&fit=crop"},
-          {name:"Donut", price:1.90, img:"https://images.unsplash.com/photo-1551024601-bec78aea704b?w=200&h=200&fit=crop"},
-          {name:"Strudel", price:3.10, img:"https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=200&h=200&fit=crop"},
-          {name:"Puff Pastry", price:2.10, img:"https://images.unsplash.com/photo-1509440159596-0249088772ff?w=200&h=200&fit=crop"},
-          {name:"Pound Cake", price:2.80, img:"https://images.unsplash.com/photo-1621303837174-89787a7d4729?w=200&h=200&fit=crop"},
-          {name:"Danish Pastry", price:2.50, img:"https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&h=200&fit=crop"},
-          {name:"Cupcake", price:2.40, img:"https://images.unsplash.com/photo-1426869981800-95ebf51ce900?w=200&h=200&fit=crop"},
-          {name:"Tiramisu", price:3.50, img:"https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=200&h=200&fit=crop"}
+          {name:"Croissant", price:2.20},
+          {name:"Chocolate Muffin", price:2.50},
+          {name:"Bagel", price:1.80},
+          {name:"Brownie", price:2.30},
+          {name:"Cookie", price:1.50},
+          {name:"Banana Bread", price:2.60},
+          {name:"Apple Pie", price:3.00},
+          {name:"Donut", price:1.90}
         ],
         Snacks: [
-          {name:"Chips", price:1.20, img:"https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=200&h=200&fit=crop"},
-          {name:"Granola Bar", price:1.50, img:"https://images.unsplash.com/photo-1590301157890-4810ed352733?w=200&h=200&fit=crop"},
-          {name:"Nuts Mix", price:1.80, img:"https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=200&h=200&fit=crop"},
-          {name:"Pretzel", price:1.30, img:"https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=200&h=200&fit=crop"},
-          {name:"Popcorn", price:1.40, img:"https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=200&h=200&fit=crop"},
-          {name:"Protein Bar", price:2.10, img:"https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=200&h=200&fit=crop"},
-          {name:"Dried Fruit", price:1.90, img:"https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=200&h=200&fit=crop"},
-          {name:"Jerky", price:2.50, img:"https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=200&h=200&fit=crop"},
-          {name:"Candy", price:0.90, img:"https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=200&h=200&fit=crop"},
-          {name:"Almonds", price:1.70, img:"https://images.unsplash.com/photo-1608797178974-15b35a64ede9?w=200&h=200&fit=crop"},
-          {name:"Cashews", price:2.00, img:"https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=200&h=200&fit=crop"}
+          {name:"Chips", price:1.20},
+          {name:"Granola Bar", price:1.50},
+          {name:"Nuts Mix", price:1.80},
+          {name:"Pretzel", price:1.30},
+          {name:"Popcorn", price:1.40},
+          {name:"Protein Bar", price:2.10}
         ],
         Drinks: [
-          {name:"Water", price:1.00, img:"https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&h=200&fit=crop"},
-          {name:"Sparkling Water", price:1.50, img:"https://images.unsplash.com/photo-1523362628745-0c100150b504?w=200&h=200&fit=crop"},
-          {name:"Orange Juice", price:2.00, img:"https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=200&h=200&fit=crop"},
-          {name:"Iced Tea", price:1.70, img:"https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200&h=200&fit=crop"},
-          {name:"Cola", price:1.60, img:"https://images.unsplash.com/photo-1554866585-cd94860890b7?w=200&h=200&fit=crop"},
-          {name:"Milkshake", price:2.80, img:"https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=200&h=200&fit=crop"},
-          {name:"Diet Cola", price:1.60, img:"https://images.unsplash.com/photo-1629203851122-3726ecdf080e?w=200&h=200&fit=crop"},
-          {name:"Ginger Ale", price:1.70, img:"https://images.unsplash.com/photo-1624517452488-04869289c4ca?w=200&h=200&fit=crop"},
-          {name:"Green Tea", price:1.80, img:"https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=200&h=200&fit=crop"},
-          {name:"Hot Chocolate", price:2.50, img:"https://images.unsplash.com/photo-1517578239113-b03992dcdd25?w=200&h=200&fit=crop"},
-          {name:"Smoothie", price:3.50, img:"https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=200&h=200&fit=crop"}
+          {name:"Water", price:1.00},
+          {name:"Sparkling Water", price:1.50},
+          {name:"Orange Juice", price:2.00},
+          {name:"Iced Tea", price:1.70},
+          {name:"Cola", price:1.60},
+          {name:"Milkshake", price:2.80}
         ],
         Merch: [
-          {name:"Mug", price:8.00, img:"https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=200&h=200&fit=crop"},
-          {name:"T-Shirt", price:15.00, img:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop"},
-          {name:"Beans 250g", price:6.50, img:"https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=200&fit=crop"},
-          {name:"Thermos", price:18.00, img:"https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=200&h=200&fit=crop"},
-          {name:"Sticker Pack", price:3.00, img:"https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=200&h=200&fit=crop"},
-          {name:"Bean 1kg", price:22.00, img:"https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=200&h=200&fit=crop"},
-          {name:"Cap", price:12.00, img:"https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=200&h=200&fit=crop"},
-          {name:"Tote Bag", price:10.00, img:"https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=200&h=200&fit=crop"},
-          {name:"Keychain", price:2.50, img:"https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=200&h=200&fit=crop"},
-          {name:"Notebook", price:5.00, img:"https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=200&h=200&fit=crop"},
-          {name:"Pen Set", price:4.50, img:"https://images.unsplash.com/photo-1517059224940-d4af9eec41b7?w=200&h=200&fit=crop"},
-          {name:"Travel Mug", price:16.00, img:"https://images.unsplash.com/photo-1577937927133-66ef06acdf18?w=200&h=200&fit=crop"},
-          {name:"Water Bottle", price:13.00, img:"https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=200&h=200&fit=crop"},
-          {name:"Hoodie", price:35.00, img:"https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200&h=200&fit=crop"},
-          {name:"Pin Set", price:6.00, img:"https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?w=200&h=200&fit=crop"}
+          {name:"Mug", price:8.00},
+          {name:"T-Shirt", price:15.00},
+          {name:"Beans 250g", price:6.50},
+          {name:"Thermos", price:18.00},
+          {name:"Sticker Pack", price:3.00}
         ]
       }
     };
 
-    const state = { category: data.categories[0], cart: [] };
-    const $ = (sel)=>document.querySelector(sel);
-    const fmt = (n)=>n.toFixed(2);
-
-    function renderCategories(){
-      const c = $('#categories'); c.innerHTML = '';
-      const icons = { Coffee:'☕', Bakery:'🥐', Snacks:'🍪', Drinks:'🥤', Merch:'🛍️' };
-      data.categories.forEach(cat => {
-        const el = document.createElement('button');
-        el.className = 'cat' + (cat===state.category ? ' active' : '');
-        el.textContent = `${icons[cat]} ${cat}`;
-        el.onclick = ()=>{ state.category = cat; renderCategories(); renderGrid(); };
-        c.appendChild(el);
-      });
-      // Push settings further down
-      const spacer = document.createElement('div'); spacer.style.flex = '1'; c.appendChild(spacer);
-      const setBtn = document.createElement('button'); setBtn.className = 'cat'; setBtn.id='openSettings'; setBtn.type='button'; setBtn.textContent = '⚙ Settings'; setBtn.setAttribute('aria-controls','settingsPanel'); c.appendChild(setBtn);
-    }
-
-    function renderGrid(){
-      const g = $('#grid'); g.innerHTML = '';
-      data.products[state.category].forEach(p => {
-        const el = document.createElement('button');
-        el.className = 'item';
-        el.innerHTML = `<img src="${p.img}" alt="${p.name}" loading="lazy"><div class="name">${p.name}</div><div class="price">€${fmt(p.price)}</div>`;
-        el.onclick = ()=>addToCart(p);
-        g.appendChild(el);
-      });
-    }
-
-    function addToCart(p){
-      const found = state.cart.find(i=>i.name===p.name);
-      if(found){ found.qty++; } else { state.cart.push({name:p.name, price:p.price, qty:1}); }
-      updateStatus(); renderCartList();
-    }
-
-    function updateStatus(){
-      const count = state.cart.reduce((a,i)=>a+i.qty,0);
-      const total = state.cart.reduce((a,i)=>a+i.qty*i.price,0);
-      $('#itemCount').textContent = count; $('#total').textContent = fmt(total);
-      $('#cartSummary').textContent = count ? `${count} item(s) • €${fmt(total)}` : 'Empty cart';
-    }
-
-    function renderCartList(){
-      const list = $('#cartList'); list.innerHTML = '';
-      state.cart.forEach(i=>{
-        const row = document.createElement('div'); row.className='row';
-        row.innerHTML = `
-          <div class="c-name">${i.name}</div>
-          <div class="qty">
-            <button class="icon-btn" aria-label="Decrease" onclick="window.dec('${i.name}')">-</button>
-            <span>${i.qty}</span>
-            <button class="icon-btn" aria-label="Increase" onclick="window.inc('${i.name}')">+</button>
-          </div>
-          <div class="c-total">€${fmt(i.qty*i.price)}</div>`;
-        list.appendChild(row);
-      });
-      if(!state.cart.length){ const empty = document.createElement('div'); empty.className='row'; empty.textContent='Cart is empty'; list.appendChild(empty); }
-    }
-
-    window.inc = (name)=>{ const i = state.cart.find(x=>x.name===name); if(i){ i.qty++; updateStatus(); renderCartList(); } };
-    window.dec = (name)=>{
-      const i = state.cart.find(x=>x.name===name); if(!i) return;
-      i.qty--; if(i.qty<=0){ state.cart = state.cart.filter(x=>x.name!==name); }
-      updateStatus(); renderCartList();
+    const state = {
+      category: data.categories[0],
+      cart: [],
+      orderType: null,
+      paymentMethod: null
     };
 
-    $('#toggleCart').onclick = ()=>{ const l=$('#cartList'); l.classList.toggle('show'); if(l.classList.contains('show')) $('#toggleCart').textContent='Hide Cart'; else $('#toggleCart').textContent='Cart'; };
-    
-    function completeSale(orderType){
-      if(state.cart.length === 0) return;
-      // Complete the sale
-      const total = state.cart.reduce((a,i)=>a+i.qty*i.price,0);
-      console.log(`Sale completed: ${orderType} - Total: €${fmt(total)}`);
-      // Clear cart
-      state.cart = []; 
-      updateStatus(); 
-      renderCartList(); 
-      $('#cartList').classList.remove('show');
-      // Close modal
-      hideOrderTypeModal();
+    const $ = (sel) => document.querySelector(sel);
+    const fmt = (n) => n.toFixed(2);
+
+    // Sales History Management
+    function getSalesHistory(){
+      const history = localStorage.getItem('salesHistory');
+      return history ? JSON.parse(history) : [];
     }
 
-    function showOrderTypeModal(){
-      $('#orderTypeBackdrop').classList.add('show');
-      $('#orderTypeModal').style.display = 'block';
+    function saveSale(sale){
+      const history = getSalesHistory();
+      history.push(sale);
+      localStorage.setItem('salesHistory', JSON.stringify(history));
     }
 
-    function hideOrderTypeModal(){
-      $('#orderTypeBackdrop').classList.remove('show');
-      $('#orderTypeModal').style.display = 'none';
-    }
-
-    $('#checkout').onclick = ()=>{
-      if(state.cart.length === 0) return;
-      // Show modal
-      showOrderTypeModal();
-    };
-
-    $('#takeAwayBtn').onclick = ()=>{
-      completeSale('Take Away');
-    };
-
-    $('#eatInBtn').onclick = ()=>{
-      completeSale('Eat In');
-    };
-
-    $('#cancelOrderBtn').onclick = ()=>{
-      hideOrderTypeModal();
-    };
-
-    // Close modal when backdrop is clicked
-    $('#orderTypeBackdrop').onclick = ()=>{
-      hideOrderTypeModal();
-    };
-
-    renderCategories(); renderGrid(); updateStatus();
-
-    // Sidebar toggle
-    $('#toggleSidebar').onclick = ()=>{
-      $('.content').classList.toggle('collapsed');
-    };
-
-    // Settings panel toggle
-    document.addEventListener('click', (e) => {
-      if(e.target && e.target.id === 'openSettings') {
-        const panel = $('#settingsPanel');
-        if(panel.style.display === 'block') {
-          panel.style.display = 'none';
-        } else {
-          panel.style.display = 'block';
-        }
+    function refundSale(saleId){
+      const history = getSalesHistory();
+      const sale = history.find(s => s.id === saleId);
+      if(sale && !sale.refunded){
+        sale.refunded = true;
+        sale.refundedAt = new Date().toISOString();
+        localStorage.setItem('salesHistory', JSON.stringify(history));
+        generateSalesReport();
       }
-    });
+    }
+
+    // Render Categories
+    function renderCategories(){
+      const container = $('#categories');
+      container.innerHTML = '';
+      data.categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'cat' + (cat === state.category ? ' active' : '');
+        btn.textContent = cat;
+        btn.onclick = () => {
+          state.category = cat;
+          renderCategories();
+          renderProducts();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    // Render Products
+    function renderProducts(){
+      const grid = $('#productsGrid');
+      grid.innerHTML = '';
+      data.products[state.category].forEach(product => {
+        const item = document.createElement('button');
+        item.className = 'product-item';
+        item.innerHTML = `
+          <div class="name">${product.name}</div>
+          <div class="price">€${fmt(product.price)}</div>
+        `;
+        item.onclick = () => addToCart(product);
+        grid.appendChild(item);
+      });
+    }
+
+    // Add to Cart
+    function addToCart(product){
+      const found = state.cart.find(i => i.name === product.name);
+      if(found){
+        found.qty++;
+      } else {
+        state.cart.push({name: product.name, price: product.price, qty: 1});
+      }
+      renderCart();
+      updateTotal();
+      updateCheckoutButton();
+    }
+
+    // Render Cart
+    function renderCart(){
+      const container = $('#cartItems');
+      if(state.cart.length === 0){
+        container.innerHTML = '<div class="empty-cart">Cart is empty<br>Add products to start</div>';
+        return;
+      }
+
+      container.innerHTML = '';
+      state.cart.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'cart-item';
+        el.innerHTML = `
+          <div>
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-price">€${fmt(item.price)} × ${item.qty} = €${fmt(item.qty * item.price)}</div>
+          </div>
+          <div class="cart-item-qty">
+            <button class="qty-btn" onclick="decreaseQty('${item.name}')">−</button>
+            <span class="qty-value">${item.qty}</span>
+            <button class="qty-btn" onclick="increaseQty('${item.name}')">+</button>
+          </div>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    window.increaseQty = (name) => {
+      const item = state.cart.find(i => i.name === name);
+      if(item){
+        item.qty++;
+        renderCart();
+        updateTotal();
+      }
+    };
+
+    window.decreaseQty = (name) => {
+      const item = state.cart.find(i => i.name === name);
+      if(item){
+        item.qty--;
+        if(item.qty <= 0){
+          state.cart = state.cart.filter(i => i.name !== name);
+        }
+        renderCart();
+        updateTotal();
+        updateCheckoutButton();
+      }
+    };
+
+    // Update Total
+    function updateTotal(){
+      const total = state.cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+      const count = state.cart.reduce((sum, item) => sum + item.qty, 0);
+      $('#totalAmount').textContent = '€' + fmt(total);
+      $('#itemCount').textContent = count + ' item' + (count !== 1 ? 's' : '');
+    }
+
+    // Update Checkout Button
+    function updateCheckoutButton(){
+      const btn = $('#checkoutBtn');
+      const canCheckout = state.cart.length > 0 && state.orderType && state.paymentMethod;
+      btn.disabled = !canCheckout;
+    }
+
+    // Order Type Selection
+    $('#takeAwayBtn').onclick = () => {
+      state.orderType = 'Take Away';
+      $('#takeAwayBtn').classList.add('selected');
+      $('#eatInBtn').classList.remove('selected');
+      updateCheckoutButton();
+    };
+
+    $('#eatInBtn').onclick = () => {
+      state.orderType = 'Eat In';
+      $('#eatInBtn').classList.add('selected');
+      $('#takeAwayBtn').classList.remove('selected');
+      updateCheckoutButton();
+    };
+
+    // Payment Method Selection
+    $('#cashBtn').onclick = () => {
+      state.paymentMethod = 'Cash';
+      $('#cashBtn').classList.add('selected');
+      $('#cardBtn').classList.remove('selected');
+      updateCheckoutButton();
+    };
+
+    $('#cardBtn').onclick = () => {
+      state.paymentMethod = 'Card';
+      $('#cardBtn').classList.add('selected');
+      $('#cashBtn').classList.remove('selected');
+      updateCheckoutButton();
+    };
+
+    // Checkout
+    $('#checkoutBtn').onclick = () => {
+      if(state.cart.length === 0 || !state.orderType || !state.paymentMethod) return;
+
+      const sale = {
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        items: [...state.cart],
+        total: state.cart.reduce((sum, item) => sum + (item.qty * item.price), 0),
+        orderType: state.orderType,
+        paymentMethod: state.paymentMethod,
+        cashier: $('#cashierSel').value,
+        timestamp: new Date().toISOString(),
+        refunded: false
+      };
+
+      saveSale(sale);
+
+      // Reset
+      state.cart = [];
+      state.orderType = null;
+      state.paymentMethod = null;
+      $('#takeAwayBtn').classList.remove('selected');
+      $('#eatInBtn').classList.remove('selected');
+      $('#cashBtn').classList.remove('selected');
+      $('#cardBtn').classList.remove('selected');
+
+      renderCart();
+      updateTotal();
+      updateCheckoutButton();
+
+      alert('Order completed successfully!');
+    };
+
+    // Device Toggle
+    $('#phoneBtn').onclick = () => {
+      $('#deviceFrame').classList.remove('tablet');
+      $('#phoneBtn').classList.add('active');
+      $('#tabletBtn').classList.remove('active');
+    };
+
+    $('#tabletBtn').onclick = () => {
+      $('#deviceFrame').classList.add('tablet');
+      $('#tabletBtn').classList.add('active');
+      $('#phoneBtn').classList.remove('active');
+    };
+
+    // Settings Popup
+    $('#settingsBtn').onclick = () => {
+      $('#settingsBackdrop').classList.add('show');
+      $('#settingsPopup').classList.add('show');
+    };
+
+    $('#settingsBackdrop').onclick = () => {
+      $('#settingsBackdrop').classList.remove('show');
+      $('#settingsPopup').classList.remove('show');
+    };
+
+    // Sales Report
+    $('#openSalesReportBtn').onclick = () => {
+      // Close settings popup first
+      $('#settingsBackdrop').classList.remove('show');
+      $('#settingsPopup').classList.remove('show');
+
+      // Open sales report
+      $('#salesReportBackdrop').classList.add('show');
+      $('#salesReportModal').classList.add('show');
+      generateSalesReport();
+    };
+
+    $('#closeReportBtn').onclick = () => {
+      $('#salesReportBackdrop').classList.remove('show');
+      $('#salesReportModal').classList.remove('show');
+    };
+
+    $('#salesReportBackdrop').onclick = () => {
+      $('#salesReportBackdrop').classList.remove('show');
+      $('#salesReportModal').classList.remove('show');
+    };
+
+    $('#refreshReportBtn').onclick = () => {
+      generateSalesReport();
+    };
+
+    $('#reportPeriod').onchange = () => {
+      generateSalesReport();
+    };
+
+    $('#reportPayment').onchange = () => {
+      generateSalesReport();
+    };
+
+    function filterSalesByPeriod(sales, period){
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      return sales.filter(sale => {
+        const saleDate = new Date(sale.timestamp);
+        const saleDateOnly = new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate());
+
+        switch(period){
+          case 'today':
+            return saleDateOnly.getTime() === today.getTime();
+          case 'yesterday':
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            return saleDateOnly.getTime() === yesterday.getTime();
+          case 'week':
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return saleDate >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return saleDate >= monthAgo;
+          case 'all':
+          default:
+            return true;
+        }
+      });
+    }
+
+    function generateSalesReport(){
+      const period = $('#reportPeriod').value;
+      const paymentFilter = $('#reportPayment').value;
+
+      let sales = getSalesHistory();
+      sales = filterSalesByPeriod(sales, period);
+
+      if(paymentFilter !== 'all'){
+        sales = sales.filter(s => s.paymentMethod === paymentFilter);
+      }
+
+      const totalSales = sales.filter(s => !s.refunded).length;
+      const totalRefunds = sales.filter(s => s.refunded).length;
+      const totalRevenue = sales.filter(s => !s.refunded).reduce((sum, sale) => sum + sale.total, 0);
+      const avgSale = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+      let html = `
+        <div class="report-summary">
+          <div class="summary-card">
+            <div class="label">Total Sales</div>
+            <div class="value">${totalSales}</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Total Revenue</div>
+            <div class="value">€${fmt(totalRevenue)}</div>
+          </div>
+          <div class="summary-card">
+            <div class="label">Refunds</div>
+            <div class="value">${totalRefunds}</div>
+          </div>
+        </div>
+      `;
+
+      if(sales.length > 0){
+        html += `
+          <table class="sales-table">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>Cashier</th>
+                <th>Type</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        sales.reverse().forEach(sale => {
+          const date = new Date(sale.timestamp);
+          const dateStr = date.toLocaleDateString();
+          const timeStr = date.toLocaleTimeString();
+
+          html += `
+            <tr style="${sale.refunded ? 'opacity:0.5;text-decoration:line-through;' : ''}">
+              <td>${dateStr} ${timeStr}</td>
+              <td>${sale.cashier}</td>
+              <td>${sale.orderType}</td>
+              <td>${sale.paymentMethod}</td>
+              <td><strong>€${fmt(sale.total)}</strong></td>
+              <td>
+                <button class="refund-btn" onclick="refundSale('${sale.id}')" ${sale.refunded ? 'disabled' : ''}>
+                  ${sale.refunded ? 'Refunded' : 'Refund'}
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += `
+            </tbody>
+          </table>
+        `;
+      } else {
+        html += `<div style="text-align:center; padding:40px; color:#94a3b8;">No sales found for the selected period.</div>`;
+      }
+
+      $('#reportContent').innerHTML = html;
+    }
+
+    window.refundSale = (saleId) => {
+      if(confirm('Are you sure you want to refund this sale?')){
+        refundSale(saleId);
+      }
+    };
+
+    $('#exportBtn').onclick = () => {
+      const period = $('#reportPeriod').value;
+      const paymentFilter = $('#reportPayment').value;
+
+      let sales = getSalesHistory();
+      sales = filterSalesByPeriod(sales, period);
+
+      if(paymentFilter !== 'all'){
+        sales = sales.filter(s => s.paymentMethod === paymentFilter);
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + "Date,Time,Cashier,Order Type,Payment,Total,Status\n"
+        + sales.map(sale => {
+            const date = new Date(sale.timestamp);
+            const status = sale.refunded ? 'Refunded' : 'Completed';
+            return `${date.toLocaleDateString()},${date.toLocaleTimeString()},${sale.cashier},${sale.orderType},${sale.paymentMethod},${sale.total},${status}`;
+          }).join("\n");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `sales_report_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // Initialize
+    renderCategories();
+    renderProducts();
+    renderCart();
+    updateTotal();
+    updateCheckoutButton();
   </script>
 </body>
 </html>

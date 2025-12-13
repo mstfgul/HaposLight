@@ -1,34 +1,109 @@
-/* Phone frame and centered viewport */
+/* Phone/Tablet POS Mockup */
 :root{
-  /* More compact portrait size */
-  --phone-width: 320px;
-  --phone-height: 680px;
-  --phone-radius: 24px;
+  --phone-width: 390px;
+  --phone-height: 844px;
+  --phone-radius: 48px;
   --frame:#111;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:url('image.png') center / contain no-repeat;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;color:#fff; overscroll-behavior-y: contain; min-height:100vh}
-.viewport{min-height:100%;display:grid;place-items:center;padding:24px 24px 32px; overscroll-behavior: contain; position:relative; z-index:5; isolation:isolate}
+body{
+  background:#1e293b;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;
+  color:#0f172a;
+  overflow:hidden;
+}
+.device-toggle{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:100;
+  background:rgba(255,255,255,.95);
+  padding:8px 12px;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.device-toggle button{
+  padding:8px 16px;
+  border:2px solid #cbd5e1;
+  border-radius:8px;
+  background:#fff;
+  color:#475569;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.device-toggle button:hover{
+  border-color:#94a3b8;
+}
+.device-toggle button.active{
+  background:linear-gradient(135deg,#0ea5e9,#6366f1);
+  color:#fff;
+  border-color:#0ea5e9;
+}
+.viewport{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:80px 24px 20px;
+  overflow:auto;
+}
 .phone{
-  width: var(--phone-width);
-  height: var(--phone-height);
+  width:var(--phone-width);
+  height:var(--phone-height);
   background:var(--frame);
   border-radius:var(--phone-radius);
   box-shadow:0 20px 60px rgba(0,0,0,.45), inset 0 0 0 10px #000, inset 0 0 0 12px #1b1b1b;
   padding:16px;
   position:relative;
-  align-self:end;
   overflow:hidden;
-  transform:translateY(-30px);
+  transition:all .4s ease;
 }
-.notch{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:120px;height:22px;background:#000;border-radius:0 0 16px 16px}
+.phone.tablet{
+  --phone-width:680px;
+  --phone-height:900px;
+  --phone-radius:32px;
+}
+.notch{
+  position:absolute;
+  top:6px;
+  left:50%;
+  transform:translateX(-50%);
+  width:150px;
+  height:28px;
+  background:#000;
+  border-radius:0 0 20px 20px;
+  z-index:2;
+}
+.phone.tablet .notch{
+  display:none;
+}
 .screen{
-  width:100%;height:100%;
+  width:100%;
+  height:100%;
   background:#f7f9fc;
   border-radius:calc(var(--phone-radius) - 16px);
   overflow:hidden;
-  display:grid;grid-template-rows:auto 1fr auto;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
 }
-.home-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:120px;height:5px;border-radius:3px;background:#555}
+.home-indicator{
+  position:absolute;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  width:140px;
+  height:5px;
+  border-radius:3px;
+  background:#555;
+}
+.phone.tablet .home-indicator{
+  width:180px;
+  height:6px;
+}
 
